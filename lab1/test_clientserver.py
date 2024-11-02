@@ -25,10 +25,26 @@ class TestEchoService(unittest.TestCase):
         super().setUp()
         self.client = clientserver.Client()  # create new client for each test
 
-    def test_srv_get(self):  # each test_* function is a test
-        """Test simple call"""
-        msg = self.client.call("Hello VS2Lab")
-        self.assertEqual(msg, 'Hello VS2Lab*')
+
+    def test_srv_getMiro(self):  # each test_* function is a test
+        """Test get miro"""
+        msg = self.client.get("Miro")
+        self.assertEqual(msg, '12345')
+
+    def test_srv_getBjoern(self):  # each test_* function is a test
+        """Test get Björn"""
+        msg = self.client.get("Björn")
+        self.assertEqual(msg, '4545454')
+
+    def test_srv_getBjoern(self):  # each test_* function is a test
+        """Test get Björn"""
+        msg = self.client.get("Björn2")
+        self.assertEqual(msg, 'null')
+
+    def test_srv_getBjoern(self):  # each test_* function is a test
+        """Test get Björn"""
+        msg = self.client.getall()
+        self.assertEqual(msg, "{\"Miro\": \"12345\", \"Tim\": \"54321\", \"Björn\": \"4545454\"}") 
 
     def tearDown(self):
         self.client.close()  # terminate client after each test

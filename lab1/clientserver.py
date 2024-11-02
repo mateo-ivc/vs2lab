@@ -4,6 +4,7 @@ Client and server using classes
 
 import logging
 import socket
+import json
 
 import const_cs
 from context import lab_logging
@@ -16,6 +17,8 @@ class Server:
     """ The server """
     _logger = logging.getLogger("vs2lab.lab1.clientserver.Server")
     _serving = True
+    
+    number_dict = {"Miro": '12345', "Tim": "54321", "Björn": "4545454"}
 
     def __init__(self):
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -33,9 +36,17 @@ class Server:
                 (connection, address) = self.sock.accept()  # returns new socket and address of client
                 while True:  # forever
                     data = connection.recv(1024)  # receive data from client
+                    self._logger.info(data)
                     if not data:
                         break  # stop if client stopped
-                    connection.send(data + "*".encode('ascii'))  # return sent data plus an "*"
+                    msg = data.decode('unicode-escape')
+                    if msg == "getall":
+                        connection.send(json.dumps(self.number_dict).encode('ascii'))
+                    else:
+                        if msg.split(':')[1] in self.number_dict.keys():
+                            connection.send(self.number_dict.get(msg.split(':')[1]).encode('ascii'))
+                        else: 
+                            connection.send("null".encode('ascii'))
                 connection.close()  # close the connection
             except socket.timeout:
                 pass  # ignore timeouts
@@ -65,3 +76,15 @@ class Client:
     def close(self):
         """ Close socket """
         self.sock.close()
+
+    def get(self, name=""):
+        self.sock.send(("get:" + name).encode('unicode-escape'))
+        data = self.sock.recv(1024)  # receive the response
+        msg_out = data.decode('unicode-escape')
+        return msg_out
+    
+    def getall(self):
+        self.sock.send("getall".encode('unicode-escape'))
+        data = self.sock.recv(1024)  # receive the response
+        msg_out = data.decode('unicode-escape')
+        return msg_out
