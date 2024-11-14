@@ -1,3 +1,5 @@
+import threading
+import time
 import constRPC
 
 from context import lab_channel
@@ -25,12 +27,13 @@ class Client:
     def stop(self):
         self.chan.leave('client')
 
-    def append(self, data, db_list):
-        assert isinstance(db_list, DBList)
+    def append(self, data, db_list, callback):
         msglst = (constRPC.APPEND, data, db_list)  # message payload
         self.chan.send_to(self.server, msglst)  # send msg to server
-        msgrcv = self.chan.receive_from(self.server)  # wait for response
-        return msgrcv[1]  # pass it to caller
+
+        thread = WaitForAppendThread(callback, self.chan ,self.server)
+        thread.start()
+        thread.join() 
 
 
 class Server:
@@ -49,6 +52,9 @@ class Server:
         while True:
             msgreq = self.chan.receive_from_any(self.timeout)  # wait for any request
             if msgreq is not None:
+                for x in range(10):
+                    print("Server is working hard")
+                    time.sleep(1)
                 client = msgreq[0]  # see who is the caller
                 msgrpc = msgreq[1]  # fetch call & parameters
                 if constRPC.APPEND == msgrpc[0]:  # check what is being requested
@@ -56,3 +62,18 @@ class Server:
                     self.chan.send_to({client}, result)  # return response
                 else:
                     pass  # unsupported request, simply ignore
+
+class WaitForAppendThread(threading.Thread):
+    def __init__(self, callback, chan, server):
+        threading.Thread.__init__(self)
+        self.callback = callback
+        self.chan = chan
+        self.server = server
+
+
+    def run(self):
+        print('Finished background task of:')
+        msgrcv = self.chan.receive_from(self.server) 
+        self.callback(msgrcv[1])
+
+    
