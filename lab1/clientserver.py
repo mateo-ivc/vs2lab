@@ -43,10 +43,10 @@ class Server:
                     if msg == "getall":
                         connection.send(json.dumps(self.number_dict).encode('ascii'))
                     else:
-                        if msg.split(':')[1] in self.number_dict.keys():
-                            connection.send(self.number_dict.get(msg.split(':')[1]).encode('ascii'))
+                        if msg.split(' ')[1] in self.number_dict.keys():
+                            connection.send(self.number_dict.get(msg.split(' ')[1]).encode('ascii'))
                         else: 
-                            connection.send("null".encode('ascii'))
+                            connection.send("Error: Not found".encode('ascii'))
                 connection.close()  # close the connection
             except socket.timeout:
                 pass  # ignore timeouts
@@ -78,7 +78,7 @@ class Client:
         self.sock.close()
 
     def get(self, name=""):
-        self.sock.send(("get:" + name).encode('unicode-escape'))
+        self.sock.send(("get " + name).encode('unicode-escape'))
         data = self.sock.recv(1024)  # receive the response
         msg_out = data.decode('unicode-escape')
         return msg_out
