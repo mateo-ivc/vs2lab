@@ -30,10 +30,14 @@ class Client:
     def append(self, data, db_list, callback):
         msglst = (constRPC.APPEND, data, db_list)  # message payload
         self.chan.send_to(self.server, msglst)  # send msg to server
-
-        thread = WaitForAppendThread(callback, self.chan ,self.server)
-        thread.start()
-        thread.join() 
+        msg = self.chan.receive_from(self.server)
+        if msg[1] == constRPC.ACK:
+            thread = WaitForAppendThread(callback, self.chan ,self.server)
+            thread.start()
+            for n in range(9):
+                time.sleep(1)
+                print("Client doing other stuff") 
+            thread.join() 
 
 
 class Server:
@@ -52,11 +56,10 @@ class Server:
         while True:
             msgreq = self.chan.receive_from_any(self.timeout)  # wait for any request
             if msgreq is not None:
-                for x in range(10):
-                    print("Server is working hard")
-                    time.sleep(1)
                 client = msgreq[0]  # see who is the caller
                 msgrpc = msgreq[1]  # fetch call & parameters
+                self.chan.send_to({client}, constRPC.ACK)
+                time.sleep(5)
                 if constRPC.APPEND == msgrpc[0]:  # check what is being requested
                     result = self.append(msgrpc[1], msgrpc[2])  # do local call
                     self.chan.send_to({client}, result)  # return response
@@ -72,7 +75,6 @@ class WaitForAppendThread(threading.Thread):
 
 
     def run(self):
-        print('Finished background task of:')
         msgrcv = self.chan.receive_from(self.server) 
         self.callback(msgrcv[1])
 
